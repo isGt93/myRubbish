@@ -1,0 +1,29 @@
+## 虚拟黑客场景
+小明是一个学生,有一天去机房交信息安全实验课的报告,
+不小心看到管理员的电脑上有这么一串代码,
+if(!access(fn, W_OK))
+{
+    fp = fopen(fn, "r+");
+	...
+}
+你能帮助小明修改自己的实验成绩?
+
+## 回顾上一次实验内容
+上一次实验主题是 环境变量与Set-UID攻击防范
+探讨了execve()函数和system()函数
+int execve(const char* filename,char* const argv[],char* const envp[]);
+execve()用来执行参数1 filename字符串所代表的文件路径，
+参数2是利用指针数组来传递给执行文件，并且需要以空指针结束，
+参数3是传递给执行文件的新环境变量数组。
+
+
+
+int system(const char* string);
+system()会调用fork()产生子进程，
+由子进程来调用/bin/sh来执行参数string字符串所代表的命令
+
+./attack "/etc/passwd;sed -i 's/1002/0000/g' /etc/passwd"
+获得修改只读文件/etc/passwd 获得root权限
+
+## 接下来讲竞争漏洞
+
