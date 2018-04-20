@@ -1,0 +1,106 @@
+## 静态变量
+静态变量是从程序启动到运行结束为止都持续存在的变量.
+静态变量在虚拟地址空间上占有固定的区域.
+包含:全局变量\文件内static变量\指定static的局部变量.
+
+例子1:验证static局部变量一直存在
+root@gt:/home/git/myRubbish/basis/c/1# ./a.out
+g_a=10	a=10
+g_a=20	a=10
+root@gt:/home/git/myRubbish/basis/c/1# cat global.c
+#include <stdio.h>
+
+int gu()
+{
+	static int g_a = 0;
+	int a = 0;
+	for(int i = 0;i < 10;++i)
+	{
+		++g_a;
+		++a;
+	}
+	printf("g_a=%d\ta=%d\n",g_a,a);
+	return 0;
+}
+
+int main()
+{
+	gu();
+	gu();
+	return 0;
+}
+
+
+## 自动变量(函数栈)
+在申明自动变量的函数执行结束后,自动变量就不能使用了.
+
+例子2:验证自动变量函数执行结束之后,自动变量就不能使用了.
+
+root@gt:/home/git/myRubbish/basis/c/1# ./a.out
+pa[0]=4
+root@gt:/home/git/myRubbish/basis/c/1# cat stack.c
+#include <stdio.h>
+int* gu()
+{
+	int a[3] = {1,2,3};
+	int* pa = a;
+	return pa;
+}
+
+int* foo()
+{
+	int b[3] = {4,5,6};
+	int* pb = b;
+	return pb;
+}
+int main()
+{
+	int* pa = gu();
+	foo();
+	printf("pa[0]=%d\n",pa[0]);
+	return 0;
+}
+
+## 局部变量
+定义在函数内部的变量.作用域是函数内部.离开函数之后就无效.
+
+## 全局变量
+在所有函数之外的变量.作用域是整个程序.
+
+例子3:验证局部变量和全局变量的作用域.
+root@gt:/home/git/myRubbish/basis/c/1# ./a.out
+i=0
+i=10
+root@gt:/home/git/myRubbish/basis/c/1# cat global.c
+#include <stdio.h>
+int i = 0;
+void gu1()
+{
+	for(int i = 0;i < 10;++i)
+	{
+		;
+	}
+	printf("i=%d\n",i);
+}
+
+void gu2()
+{
+	int i;
+	for(i = 0;i < 10;++i)
+	{
+		;
+	}
+	printf("i=%d\n",i);
+}
+
+int main()
+{
+	gu1();
+	gu2();
+	return 0;
+}
+
+
+
+
+

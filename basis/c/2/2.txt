@@ -1,0 +1,35 @@
+## 理解字符串
+字符串常量存储在内存静态区,不可以被修改.
+
+
+例子1:
+root@gt:/home/git/myRubbish/basis/c/2# ./a.out
+pstr[0]=a	pstr=abc
+pa[0]=a	pa=abc
+root@gt:/home/git/myRubbish/basis/c/2# cat string.c
+#include <stdio.h>
+int main()
+{
+	char* pstr = "abc";
+	char a[] = {'a','b','c','\0'};
+	char* pa = a;
+
+	printf("pstr[0]=%c\tpstr=%s\n",pstr[0],pstr);
+	printf("pa[0]=%c\tpa=%s\n",pa[0],pa);
+
+	return 0;
+}
+
+例子2:
+root@gt:/home/git/myRubbish/basis/c/2# ./a.out 
+Segmentation fault
+root@gt:/home/git/myRubbish/basis/c/2# cat str2.c 
+#include <stdio.h>
+int main()
+{
+	char* pstr = "abc";
+	pstr[0] = 'A';
+	printf("pstr[0]=%c\n",pstr[0]);
+	return 0;
+}
+

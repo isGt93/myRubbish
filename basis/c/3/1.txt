@@ -1,0 +1,216 @@
+## 形参\实参的区别?
+
+例子1:能否直接交换,不能?
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out 
+a=100	b=200
+root@gt:/home/git/myRubbish/basis/c/3# cat swap.c 
+#include <stdio.h>
+void swap(int a,int b)
+{
+	int c = 0;
+	c = a;
+	a = b;
+	b = c;
+}
+
+int main()
+{
+	int a = 100;
+	int b = 200;
+	swap(a,b);
+	printf("a=%d\tb=%d\n",a,b);
+	return 0;
+}
+
+
+例子2:如何实现交换,指针?
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out 
+a=200	b=100
+root@gt:/home/git/myRubbish/basis/c/3# cat swap2.c 
+#include <stdio.h>
+void swap(int* a,int *b)
+{
+	int c = 0;
+	c = *a;
+	*a = *b;
+	*b = c;
+}
+
+int main()
+{
+	int a = 100;
+	int b = 200;
+	swap(&a,&b);
+	printf("a=%d\tb=%d\n",a,b);
+	return 0;
+}
+
+例子3:形参\实参的地址不一样?
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out 
+in swap &a=0xffc4f4b0	&b=0xffc4f4b4
+out swap &a=0xffc4f4cc	&b=0xffc4f4c8
+root@gt:/home/git/myRubbish/basis/c/3# cat swap3.c 
+#include <stdio.h>
+void swap(int a,int b)
+{
+	int c = 0;
+	c = a;
+	a = b;
+	b = c;
+	printf("in swap &a=%p\t&b=%p\n",&a,&b);
+}
+
+int main()
+{
+	int a = 100;
+	int b = 200;
+	swap(a,b);
+	printf("out swap &a=%p\t&b=%p\n",&a,&b);
+	return 0;
+}
+
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out 
+in swap &a=0xffed18dc	&b=0xffed18d8
+out swap &a=0xffed18dc	&b=0xffed18d8
+root@gt:/home/git/myRubbish/basis/c/3# cat swap4.c 
+#include <stdio.h>
+void swap(int* a,int* b)
+{
+	int c = 0;
+	c = *a;
+	*a = *b;
+	*b = c;
+	printf("in swap &a=%p\t&b=%p\n",a,b);
+}
+
+int main()
+{
+	int a = 100;
+	int b = 200;
+	swap(&a,&b);
+	printf("out swap &a=%p\t&b=%p\n",&a,&b);
+	return 0;
+}
+
+
+## 什么是函数栈?
+
+root@gt:/home/git/myRubbish/basis/c/3# cat foo.c 
+
+int foo(int a)
+{
+	int b = a;
+	return b;
+}
+
+int main()
+{
+	int a = 1;
+	foo(a);
+	return 0;
+}
+
+080483c5 <main>:
+ 80483c5:	55                   	push   %ebp
+ 80483c6:	89 e5                	mov    %esp,%ebp
+ 80483c8:	83 ec 14             	sub    $0x14,%esp
+ 80483cb:	c7 45 fc 01 00 00 00 	movl   $0x1,-0x4(%ebp)
+ 80483d2:	8b 45 fc             	mov    -0x4(%ebp),%eax
+ 80483d5:	89 04 24             	mov    %eax,(%esp)
+ 80483d8:	e8 d7 ff ff ff       	call   80483b4 <foo>
+ 80483dd:	b8 00 00 00 00       	mov    $0x0,%eax
+ 80483e2:	c9                   	leave  
+ 80483e3:	c3                   	ret    
+
+
+
+080483b4 <foo>:
+ 80483b4:	55                   	push   %ebp
+ 80483b5:	89 e5                	mov    %esp,%ebp
+ 80483b7:	83 ec 10             	sub    $0x10,%esp
+ 80483ba:	8b 45 08             	mov    0x8(%ebp),%eax
+ 80483bd:	89 45 fc             	mov    %eax,-0x4(%ebp)
+ 80483c0:	8b 45 fc             	mov    -0x4(%ebp),%eax
+ 80483c3:	c9                   	leave  
+ 80483c4:	c3                   	ret    
+
+
+ebp 堆栈栈底
+esp 堆栈栈顶
+eax 保存函数返回的数据
+call f 等价于
+pushl %eip;
+movl f, %eip;
+leave 等价于
+movl %ebp,%esp;
+popl %ebp;
+ret 等价于 pop %eip
+
+## 函数栈\堆空间区别?
+在Linux环境下:
+栈的增长方向是由高地址到低地址
+堆的增长方向是由低地址到高地址
+数组的增长方向是低地址到高地址
+
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out 
+10
+root@gt:/home/git/myRubbish/basis/c/3# cat arr.c 
+#include <stdio.h>
+int main()
+{
+	char arr[3] = {1,2,3};
+	*(arr + 4) = 10;
+	printf("%d\n",arr[4]);
+	return 0;
+}
+
+栈上空间不必自己释放
+堆上空间需要自己释放
+
+root@gt:/home/git/myRubbish/basis/c/3# ./a.out
+pa[0]=1
+root@gt:/home/git/myRubbish/basis/c/3# cat stack.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int* gu()
+{
+	int a[3] = {1,2,3};
+
+	int* pa = (int*)malloc(sizeof(a));
+	int* ret = pa;
+	memset(pa,0,sizeof(a));
+	for(int i = 0;i < sizeof(a)/sizeof(int);)
+	{
+		*pa = a[i++];
+		pa++;
+	}
+
+	return ret;
+}
+
+int* foo()
+{
+	int b[3] = {4,5,6};
+	int* pb = b;
+	return pb;
+}
+int main()
+{
+	int* pa = gu();
+	foo();
+	printf("pa[0]=%d\n",pa[0]);
+	free(pa);
+	return 0;
+}
+
+
+## 函数栈中的黑客攻击你知道吗?
+
+1.缓冲区溢出的思想?
+
+知乎live:https://www.zhihu.com/lives/930120329869795328
+2.return to libc的思想?
+
+知乎live:https://www.zhihu.com/lives/942448145230233600
+

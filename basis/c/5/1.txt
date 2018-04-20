@@ -1,0 +1,112 @@
+## 数组指针\指针数组
+int* func[]
+(int* func)[]
+int (*func)()
+
+
+
+
+## 数组\指针区别
+
+root@gt:/home/git/myRubbish/basis/c/5# ./a.out 
+data=0xff901374	&data=0xff901374
+data+1=0xff901378	&data+1=0xff901380
+sizeof(data)=12	sizeof(&data)=4
+sizeof(pdata)=4
+root@gt:/home/git/myRubbish/basis/c/5# cat data.c 
+#include <stdio.h>
+void func(int pdata[])
+{
+	printf("sizeof(pdata)=%d\n",sizeof(pdata));
+}
+
+int main()
+{
+	int data[3] = {1,2,3};
+	
+	printf("data=0x%x\t&data=%p\n",data,&data);
+	
+	printf("data+1=0x%x\t&data+1=%p\n",data+1,&data+1);
+	
+	printf("sizeof(data)=%d\tsizeof(&data)=%d\n",sizeof(data),sizeof(&data));
+
+	func(data);
+
+	return 0;
+}
+
+
+
+## const
+
+root@gt:/home/git/myRubbish/basis/c/5# ./a.out 
+des[0]=1
+root@gt:/home/git/myRubbish/basis/c/5# cat const.c 
+#include <stdio.h>
+
+void copy1(char* des,const char* src,int len)
+{
+	for(int i = 0;i < len;++i)
+		*des++ = *src++;
+}
+/*
+void copy2(char* des,char* const src,int len)
+{
+	for(int i = 0;i < len;++i)
+		*des++ = *src++;
+}
+*/
+
+int main()
+{
+	char des[] = {4,5,6};
+	char src[] = {1,2,3};
+
+	copy1(des,src,3);
+	printf("des[0]=%d\n",des[0]);
+
+//	copy2(des,src,3);
+//	printf("des[0]=%d\n",des[0]);
+
+	return 0;
+}
+
+
+
+
+root@gt:/home/git/myRubbish/basis/c/5# gcc const.c
+const.c: In function ‘copy2’:
+const.c:12:16: error: increment of read-only parameter ‘src’
+   *des++ = *src++;
+                ^~
+
+
+char* const src
+const char* src
+区别?
+
+
+
+## 派生类指针
+
+如何解读C的声明?
+1.看变量名
+2.从距离变量名最近的地方看
+2.1括号
+2.2数组
+2.3指针
+
+
+int (*func_table[10])(int a);
+
+func_table
+|0 -> int func0(int a)
+|1 -> int func1(int a)
+|2 -> int func2(int a)
+|3 -> int func3(int a)
+|4 -> int func4(int a)
+|5 -> int func5(int a)
+|6 -> int func6(int a)
+|7 -> int func7(int a)
+|8 -> int func8(int a)
+|9 -> int func9(int a)

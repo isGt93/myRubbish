@@ -1,0 +1,54 @@
+
+## 内存对齐是什么?
+
+root@gt:/home/git/myRubbish/basis/c/4# ./a.out 
+16
+delta=-85
+root@gt:/home/git/myRubbish/basis/c/4# cat mem.c 
+#include <stdio.h>
+#include <string.h>
+struct Gu{
+	int a;//4 Byte
+	char b;//1 Byte
+	double c;//8 Byte
+}gu;
+
+int main()
+{
+	printf("%d\n",sizeof(gu));
+	gu.a = 0;
+	gu.b = 1;
+	gu.c = 2.0;
+	struct Gu gu2;
+	gu2.a = 0;
+	gu2.b = 1;
+	gu2.c =2.0;
+	
+	int delta = memcmp(&gu,&gu2,sizeof(gu));	
+	printf("delta=%d\n",delta);
+	return 0;
+}
+
+## 字节序是什么?
+//小端:高地址存高位,低地址存低位
+root@gt:/home/git/myRubbish/basis/c/4# ./a.out 
+78
+56
+34
+12
+root@gt:/home/git/myRubbish/basis/c/4# cat byte.c 
+#include <stdio.h>
+int main()
+{
+	int gu = 0x12345678;
+	unsigned char* p_gu = (unsigned char*)&gu;
+
+	printf("%x\n",p_gu[0]);
+	printf("%x\n",p_gu[1]);
+	printf("%x\n",p_gu[2]);
+	printf("%x\n",p_gu[3]);
+	return 0;
+}
+
+
+
